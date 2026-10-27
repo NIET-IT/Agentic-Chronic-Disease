@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Agentic AI-based Chronic Disease Early Prediction and Decision-Support System for Diabetes and Coronary Artery Disease.">
+  <title>CardioMetabolic AI | Agentic Chronic Disease Early Prediction & Decision Support</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- App Container -->
+  <div class="app-layout">
+    
+    <!-- Top Navigation Header -->
+    <header class="app-header">
+      <div class="brand-group">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">CardioMetabolic <span class="gradient-text">Agentic AI</span></h1>
+          <p class="brand-subtitle">Chronic Disease Early Prediction & Clinical Decision-Support System</p>
+        </div>
+      </div>
+
+      <div class="header-status">
+        <div class="status-indicator online" id="system-status-indicator">
+          <span class="pulse-dot"></span>
+          <span id="system-status-text">System Active & Models Online</span>
+        </div>
+        <button id="btn-export-report" class="btn btn-secondary btn-sm" onclick="window.print()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-10 0v4h8v-4H8z" />
+          </svg>
+          Print / Export Report
+        </button>
+      </div>
+    </header>
+
+    <!-- Preset Profile Bar -->
+    <section class="preset-banner" aria-label="Demo patient profiles">
+      <div class="preset-label">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2m12-10a4 4 0 100-8 4 4 0 000 8zm7 4v6m3-3h-6" />
+        </svg>
+        <span>Quick Clinical Patient Profiles:</span>
+      </div>
+      <div class="preset-buttons">
+        <button type="button" class="preset-btn active" id="btn-preset-healthy" onclick="loadPatientPreset('healthy')">
+          🟢 Low-Risk Baseline
+        </button>
+        <button type="button" class="preset-btn" id="btn-preset-moderate" onclick="loadPatientPreset('moderate')">
+          🟡 Moderate Metabolic Strain
+        </button>
+        <button type="button" class="preset-btn" id="btn-preset-high" onclick="loadPatientPreset('high')">
+          🔴 High-Risk Cardiometabolic
+        </button>
+      </div>
+    </section>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="nav-tabs" role="tablist">
+      <button class="nav-tab active" role="tab" id="tab-comprehensive" onclick="switchTab('comprehensive')">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 6v6l4 2" />
+        </svg>
+        Comprehensive Assessment (Dual Condition)
+      </button>
+      <button class="nav-tab" role="tab" id="tab-diabetes" onclick="switchTab('diabetes')">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 2v20m10-10H2" />
+        </svg>
+        Diabetes / Prediabetes Analyzer
+      </button>
+      <button class="nav-tab" role="tab" id="tab-cad" onclick="switchTab('cad')">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+        </svg>
+        Coronary Heart Disease Analyzer
+      </button>
+    </nav>
+
+    <!-- Content Workspace -->
+    <main class="main-content">
+      
+      <!-- Input Panel -->
+      <section class="card input-card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2 class="card-title" id="form-title">Patient Clinical Parameters</h2>
+            <p class="card-subtitle" id="form-subtitle">Enter verified physiological vitals and medical survey indicators</p>
+          </div>
+          <div class="threshold-pill">
+            <label for="input-threshold">Decision Cutoff: </label>
+            <input type="number" id="input-threshold" min="0.10" max="0.90" step="0.05" value="0.50">
+          </div>
+        </div>
+
+        <form id="clinical-form" onsubmit="event.preventDefault(); runAssessment();">
+          
+          <!-- DIABETES SECTION -->
+          <div id="diabetes-form-fields" class="form-section">
+            <h3 class="section-title">
+              <span class="badge badge-dia">CDC Diabetes Health Indicators</span>
+              Metabolic & Lifestyle Features
+            </h3>
+            
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="dia-bmi">BMI (Body Mass Index)</label>
+                <input type="number" id="dia-bmi" min="12" max="70" step="0.1" value="26.5" required>
+                <span class="form-hint">Normal: 18.5 - 24.9 | Overweight: 25 - 29.9 | Obese: >=30</span>
+              </div>
+
+              <div class="form-group">
+                <label for="dia-age">Age Bracket</label>
+                <select id="dia-age">
+                  <option value="1">18 to 24</option>
+                  <option value="2">25 to 29</option>
+                  <option value="3">30 to 34</option>
+                  <option value="4">35 to 39</option>
+                  <option value="5">40 to 44</option>
+                  <option value="6">45 to 49</option>
+                  <option value="7">50 to 54</option>
+                  <option value="8">55 to 59</option>
+                  <option value="9" selected>60 to 64</option>
+                  <option value="10">65 to 69</option>
+                  <option value="11">70 to 74</option>
+                  <option value="12">75 to 79</option>
+                  <option value="13">80 or older</option>
+                </select>
+                <span class="form-hint">Standard CDC BRFSS 13-level age category</span>
+              </div>
+
+              <div class="form-group">
+                <label for="dia-genhlth">General Health Self-Rating</label>
+                <select id="dia-genhlth">
+                  <option value="1">1 - Excellent</option>
+                  <option value="2">2 - Very Good</option>
+                  <option value="3" selected>3 - Good</option>
+                  <option value="4">4 - Fair</option>
+                  <option value="5">5 - Poor</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="dia-physhlth">Days Physical Illness (Past 30d)</label>
+                <input type="number" id="dia-physhlth" min="0" max="30" value="0">
+              </div>
+
+              <div class="form-group">
+                <label for="dia-menthlth">Days Poor Mental Health (Past 30d)</label>
+                <input type="number" id="dia-menthlth" min="0" max="30" value="0">
+              </div>
+
+              <div class="form-group">
+                <label for="dia-education">Education Scale (1-6)</label>
+                <select id="dia-education">
+                  <option value="1">1 - Never attended school</option>
+                  <option value="2">2 - Elementary</option>
+                  <option value="3">3 - Some high school</option>
+                  <option value="4">4 - High school graduate</option>
+                  <option value="5" selected>5 - Some college</option>
+                  <option value="6">6 - College 4+ years</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="dia-income">Income Bracket (1-8)</label>
+                <select id="dia-income">
+                  <option value="1">1 - Less than $10,000</option>
+                  <option value="2">2 - $10k to $15k</option>
+                  <option value="3">3 - $15k to $20k</option>
+                  <option value="4">4 - $20k to $25k</option>
+                  <option value="5">5 - $25k to $35k</option>
+                  <option value="6" selected>6 - $35k to $50k</option>
+                  <option value="7">7 - $50k to $75k</option>
+                  <option value="8">8 - $75k or more</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Toggle switches for binary diabetes indicators -->
+            <div class="toggles-grid">
+              <label class="toggle-card">
+                <input type="checkbox" id="dia-highbp" checked>
+                <span class="toggle-switch"></span>
+                <span class="toggle-text">High Blood Pressure History</span>
+              </label>
+
+              <label class="toggle-card">
+                <input type="checkbox" id="dia-highchol" checked>
+                <span class="toggle-switch"></span>
+                <span class="toggle-text">High Serum Cholesterol</span>
+              </label>
+
+              <label class="toggle-card">
+                <input type="checkbox" id="dia-cholcheck" checked>
+                <span class="toggle-switch"></span>
+                <span class="toggle-text">Cholesterol Checked (Past 5 Yrs)</span>
+              </label>
+
+              <label class="toggle-card">
+                <input type="checkbox" id="dia-physactivity" checked>
+                <span class="toggle-switch"></span>
+                <span class="toggle-text">Physical Activity (Past 30 Days)</span>
+              </label>
+
+              <label class="toggle-card">
+                <input type="checkbox" id="dia-smoker">
+                <span class="toggle-switch"></span>
+                <span class="toggle-text">Smoked >= 100 Cigarettes</span>
+              </label>
+
+              <label class="toggle-card">
+                <input type="checkbox" id="dia-heartdisease">
+                <span class="toggle-switch"></span>
+                <span class="toggle-text">Coronary Heart Disease / MI History</span>
+              </label>
+
+              <label class="toggle-card">
+                <input type="checkbox" id="dia-stroke">
+                <span class="toggle-switch"></span>
+                <span class="toggle-text">Prior Stroke History</span>
+              </label>
+
+              <label class="toggle-card">
+                <input type="checkbox" id="dia-diffwalk">
+                <span class="toggle-switch"></span>
+                <span class="toggle-text">Difficulty Walking / Stairs</span>
+              </label>
+
+              <label class="toggle-card">
+                <input type="checkbox" id="dia-fruits" checked>
+                <span class="toggle-switch"></span>
+                <span class="toggle-text">Daily Fruit Intake (>=1/day)</span>
+              </label>
+
+              <label class="toggle-card">
+                <input type="checkbox" id="dia-veggies" checked>
+                <span class="toggle-switch"></span>
+                <span class="toggle-text">Daily Veggie Intake (>=1/day)</span>
+              </label>
+
+              <label class="toggle-card">
+                <input type="checkbox" id="dia-heavyalcohol">
+                <span class="toggle-switch"></span>
+                <span class="toggle-text">Heavy Alcohol Consumption</span>
+              </label>
+
+              <label class="toggle-card">
+                <input type="checkbox" id="dia-anyhealthcare" checked>
+                <span class="toggle-switch"></span>
+                <span class="toggle-text">Has Healthcare Coverage</span>
+              </label>
+
+              <label class="toggle-card">
+                <input type="checkbox" id="dia-nodocbccost">
+                <span class="toggle-switch"></span>
+                <span class="toggle-text">Care Deferred Due to Cost</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- HEART DISEASE SECTION -->
+          <div id="cad-form-fields" class="form-section">
+            <h3 class="section-title">
+              <span class="badge badge-cad">Cleveland CAD Clinical Indicators</span>
+              Vascular, Stress Test & Diagnostic Features
+            </h3>
+            
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="cad-age">Age (Years)</label>
+                <input type="number" id="cad-age" min="18" max="100" value="58" required>
+              </div>
+
+              <div class="form-group">
+                <label for="cad-sex">Biological Sex</label>
+                <select id="cad-sex">
+                  <option value="1" selected>Male (1)</option>
+                  <option value="0">Female (0)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="cad-cp">Chest Pain Type (cp)</label>
+                <select id="cad-cp">
+                  <option value="1">1 - Typical Angina</option>
+                  <option value="2" selected>2 - Atypical Angina</option>
+                  <option value="3">3 - Non-Anginal Pain</option>
+                  <option value="4">4 - Asymptomatic</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="cad-trestbps">Resting Blood Pressure (mm Hg)</label>
+                <input type="number" id="cad-trestbps" min="70" max="240" value="132" required>
+                <span class="form-hint">ACC/AHA Normal: < 120 | Stage 1: 130-139 | Stage 2: >=140</span>
+              </div>
+
+              <div class="form-group">
+                <label for="cad-chol">Serum Cholesterol (mg/dL)</label>
+                <input type="number" id="cad-chol" min="100" max="600" value="238" required>
+                <span class="form-hint">Desirable: < 200 | Borderline: 200-239 | High: >=240</span>
+              </div>
+
+              <div class="form-group">
+                <label for="cad-thalach">Max Heart Rate (thalach)</label>
+                <input type="number" id="cad-thalach" min="60" max="220" value="152" required>
+                <span class="form-hint">Peak achieved during exercise stress test (bpm)</span>
+              </div>
+
+              <div class="form-group">
+                <label for="cad-oldpeak">ST Depression (Oldpeak)</label>
+                <input type="number" id="cad-oldpeak" min="0" max="8.0" step="0.1" value="1.0" required>
+                <span class="form-hint">ST segment depression relative to baseline (mm)</span>
+              </div>
+
+              <div class="form-group">
+                <label for="cad-slope">Peak Exercise ST Slope</label>
+                <select id="cad-slope">
+                  <option value="1">1 - Upsloping</option>
+                  <option value="2" selected>2 - Flat</option>
+                  <option value="3">3 - Downsloping</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="cad-ca">Major Vessels Colored (ca: 0-3)</label>
+                <select id="cad-ca">
+                  <option value="0" selected>0 Vessels</option>
+                  <option value="1">1 Vessel</option>
+                  <option value="2">2 Vessels</option>
+                  <option value="3">3 Vessels</option>
+                </select>
+                <span class="form-hint">Detected via fluoroscopy</span>
+              </div>
+
+              <div class="form-group">
+                <label for="cad-thal">Thallium Stress Scintigraphy</label>
+                <select id="cad-thal">
+                  <option value="3" selected>3 - Normal Perfusion</option>
+                  <option value="6">6 - Fixed Defect</option>
+                  <option value="7">7 - Reversible Defect (Ischemia)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="cad-restecg">Resting ECG Results</label>
+                <select id="cad-restecg">
+                  <option value="0" selected>0 - Normal</option>
+                  <option value="1">1 - ST-T Wave Abnormality</option>
+                  <option value="2">2 - Left Ventricular Hypertrophy</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="cad-fbs">Fasting Blood Sugar > 120 mg/dL</label>
+                <select id="cad-fbs">
+                  <option value="0" selected>No (<= 120 mg/dL)</option>
+                  <option value="1">Yes (> 120 mg/dL)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="toggles-grid" style="margin-top: 1rem;">
+              <label class="toggle-card">
+                <input type="checkbox" id="cad-exang">
+                <span class="toggle-switch"></span>
+                <span class="toggle-text">Exercise-Induced Angina (exang)</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="btn-submit-assessment" class="btn btn-primary btn-lg">
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Run Agentic Decision-Support Assessment
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Results & Clinical Decision Support Panel -->
+      <section class="card results-card" id="results-panel">
+        
+        <!-- Loading State -->
+        <div id="results-loading" class="state-container hidden">
+          <div class="spinner"></div>
+          <p class="state-title">Synthesizing Clinical Models & Agent Reasoning...</p>
+          <p class="state-subtitle">Evaluating risk probability, local SHAP/coefficient attribution, and clinical guidelines</p>
+        </div>
+
+        <!-- Initial Placeholder State -->
+        <div id="results-empty" class="state-container">
+          <div class="empty-icon">
+            <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h3 class="state-title">No Assessment Evaluated Yet</h3>
+          <p class="state-subtitle">Select a patient preset above or enter custom clinical vitals, then click "Run Agentic Decision-Support Assessment".</p>
+        </div>
+
+        <!-- Populated Results Container -->
+        <div id="results-content" class="results-layout hidden">
+          
+          <!-- Urgency Banner -->
+          <div id="urgency-banner" class="urgency-banner">
+            <div class="urgency-icon">
+              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <div class="urgency-label">Clinical Triage & Action Urgency</div>
+              <div class="urgency-title" id="urgency-text">Evaluating...</div>
+            </div>
+          </div>
+
+          <!-- Risk Score Cards Grid -->
+          <div class="scores-grid" id="scores-grid">
+            <!-- Injected via JavaScript -->
+          </div>
+
+          <!-- Clinical Alerts Card -->
+          <div class="alerts-card" id="alerts-container">
+            <!-- Injected via JavaScript -->
+          </div>
+
+          <!-- Synergy Alert (if applicable) -->
+          <div class="synergy-card hidden" id="synergy-container">
+            <!-- Injected via JavaScript -->
+          </div>
+
+          <!-- Local Feature Attribution (SHAP / Coefficient Impact) -->
+          <div class="feature-importance-card">
+            <div class="section-header">
+              <h3 class="card-section-title">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Patient-Specific Feature Contributions & Risk Drivers
+              </h3>
+              <span class="pill pill-info">Local Explainability</span>
+            </div>
+            <p class="feature-chart-desc">
+              Identifies the primary clinical drivers that elevated or protected the patient's predicted risk score based on model coefficients and standardized feature magnitudes.
+            </p>
+            <div id="feature-bars-container" class="feature-bars-list">
+              <!-- Injected via JavaScript -->
+            </div>
+          </div>
+
+          <!-- Diagnostic Workup Recommendations -->
+          <div class="recommendations-card">
+            <h3 class="card-section-title">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+              </svg>
+              Recommended Diagnostic & Laboratory Workup
+            </h3>
+            <div class="workup-list" id="workup-container">
+              <!-- Injected via JavaScript -->
+            </div>
+          </div>
+
+          <!-- Lifestyle Action Plan -->
+          <div class="lifestyle-card">
+            <h3 class="card-section-title">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Evidence-Based Lifestyle & Behavioral Prescription
+            </h3>
+            <div class="lifestyle-grid" id="lifestyle-container">
+              <!-- Injected via JavaScript -->
+            </div>
+          </div>
+
+          <!-- Clinician Discussion Points -->
+          <div class="discussion-card">
+            <h3 class="card-section-title">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              Clinician Collaborative Discussion Guide
+            </h3>
+            <ul class="discussion-list" id="discussion-container">
+              <!-- Injected via JavaScript -->
+            </ul>
+          </div>
+
+          <!-- Transparent AI Reasoning Trace -->
+          <div class="reasoning-card">
+            <details class="reasoning-details">
+              <summary class="reasoning-summary">
+                <span class="reasoning-summary-title">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                  </svg>
+                  Transparent AI Agent Reasoning Trace & Clinical Audit Trail
+                </span>
+                <span class="pill pill-subtle">Audit Log</span>
+              </summary>
+              <div class="reasoning-log" id="reasoning-log">
+                <!-- Injected via JavaScript -->
+              </div>
+            </details>
+          </div>
+
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <p><strong>Clinical Research Prototype</strong> — For educational and decision-support guidance only. Not an autonomous diagnostic instrument.</p>
+        <p class="footer-specs">CDC Diabetes Health Indicators & UCI Cleveland Heart Disease Models | ADA & ACC/AHA Guideline Engine</p>
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
