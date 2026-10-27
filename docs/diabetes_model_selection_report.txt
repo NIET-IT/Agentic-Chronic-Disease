@@ -1,0 +1,31 @@
+
+DIABETES-RELATED MODEL SELECTION REPORT
+=======================================
+
+Project:
+Agentic AI-Based Chronic Disease Early Prediction
+and Decision-Support System
+
+Selected baseline model:
+Logistic Regression
+
+Reason for selection:
+1. Highest recall among the three tested models.
+2. Highest F1-score among the three tested models.
+3. Fastest training time in this experiment.
+4. Model coefficients support interpretation.
+5. Suitable baseline for further evaluation.
+
+Important limitation:
+Logistic Regression did not achieve the highest accuracy
+or ROC-AUC in this experiment.
+
+Dataset limitation:
+The CDC Diabetes Health Indicators dataset uses a target
+that combines prediabetes and diabetes. Therefore, this
+model must not be presented as a validated Type 2 diabetes
+early-prediction model.
+
+Clinical limitation:
+This is a research prototype, not a diagnostic tool.
+Further validation is required before clinical use.

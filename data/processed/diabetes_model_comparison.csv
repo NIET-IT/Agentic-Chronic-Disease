@@ -1,0 +1,4 @@
+Model,Accuracy,Precision,Recall,F1_Score,ROC_AUC,Training_Time_Seconds
+Gradient Boosting,0.867,0.5787,0.164,0.2555,0.8299,23.32
+Logistic Regression,0.7332,0.3122,0.7621,0.443,0.8218,0.39
+Random Forest,0.8309,0.4036,0.4492,0.4251,0.8053,4.1
