@@ -139,6 +139,26 @@ DIABETES_FEATURE_METADATA: Dict[str, Dict[str, Any]] = {
 }
 
 
+from backend.core.config import DIABETES_MODEL_PATH
+
+DIABETES_DEFAULT_VALUES: Dict[str, float] = {
+    "CholCheck": 1.0,
+    "Stroke": 0.0,
+    "HeartDiseaseorAttack": 0.0,
+    "Fruits": 1.0,
+    "Veggies": 1.0,
+    "HvyAlcoholConsump": 0.0,
+    "AnyHealthcare": 1.0,
+    "NoDocbcCost": 0.0,
+    "GenHlth": 3.0,
+    "MentHlth": 0.0,
+    "PhysHlth": 0.0,
+    "DiffWalk": 0.0,
+    "Education": 4.0,
+    "Income": 5.0,
+}
+
+
 class DiabetesPredictionService:
     def __init__(self, model_path: Path = DIABETES_MODEL_PATH):
         self.model_path = model_path
@@ -156,6 +176,29 @@ class DiabetesPredictionService:
         self._scaler = self._model.named_steps["standardscaler"]
         self._classifier = self._model.named_steps["logisticregression"]
 
+    def validate_features(self, features: Dict[str, Any]) -> Dict[str, float]:
+        """
+        Validate input dictionary, ensuring all required features exist and are numeric.
+        Fills optional lifestyle/socioeconomic features with clinical defaults if absent.
+        """
+        cleaned: Dict[str, float] = {}
+        missing = []
+        for col in DIABETES_FEATURE_NAMES:
+            if col in features and features[col] is not None:
+                try:
+                    cleaned[col] = float(features[col])
+                except (ValueError, TypeError):
+                    raise ValueError(f"Feature '{col}' must be a numeric value, got: {features[col]!r}")
+            elif col in DIABETES_DEFAULT_VALUES:
+                cleaned[col] = DIABETES_DEFAULT_VALUES[col]
+            else:
+                missing.append(col)
+
+        if missing:
+            raise ValueError(f"Missing required diabetes input features: {', '.join(missing)}")
+
+        return cleaned
+
     def predict(
         self,
         features: Dict[str, Any],
@@ -164,9 +207,16 @@ class DiabetesPredictionService:
         """
         Evaluate patient data against the trained Logistic Regression pipeline.
         Returns prediction, calibrated probability, risk tier, and feature contributions.
+        
+        Clinical Note:
+        The underlying CDC BRFSS dataset target represents diabetes or prediabetes
+        versus no diabetes. This model must not be described as a validated prospective
+        predictor of future disease onset.
         """
+        cleaned_features = self.validate_features(features)
+
         # Ensure ordered input vector
-        row = [features[col] for col in DIABETES_FEATURE_NAMES]
+        row = [cleaned_features[col] for col in DIABETES_FEATURE_NAMES]
         input_df = pd.DataFrame([row], columns=DIABETES_FEATURE_NAMES)
 
         probabilities = self._model.predict_proba(input_df)[0]
@@ -192,7 +242,7 @@ class DiabetesPredictionService:
 
         feature_contributions: List[Dict[str, Any]] = []
         for i, col in enumerate(DIABETES_FEATURE_NAMES):
-            raw_val = float(features[col])
+            raw_val = float(cleaned_features[col])
             scaled_val = float(scaled_values[i])
             coef = float(coefficients[i])
             impact = coef * scaled_val
@@ -227,8 +277,14 @@ class DiabetesPredictionService:
             "top_protective_factors": [
                 f for f in feature_contributions if f["impact"] < 0
             ][:5],
+            "clinical_target_note": (
+                "Dataset target represents cross-sectional diabetes or prediabetes "
+                "versus no diabetes; this prototype stratifies current risk indicators "
+                "and is not a validated prospective predictor of future disease onset."
+            ),
         }
 
 
 # Global singleton instance
 diabetes_service = DiabetesPredictionService()
+

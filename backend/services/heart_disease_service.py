@@ -104,6 +104,21 @@ CAD_FEATURE_METADATA: Dict[str, Dict[str, Any]] = {
 }
 
 
+from backend.core.config import HEART_DISEASE_MODEL_PATH
+
+CAD_MODEL_PATH = HEART_DISEASE_MODEL_PATH
+
+CAD_DEFAULT_VALUES: Dict[str, float] = {
+    "fbs": 0.0,
+    "restecg": 0.0,
+    "exang": 0.0,
+    "oldpeak": 0.0,
+    "slope": 1.0,
+    "ca": 0.0,
+    "thal": 3.0,
+}
+
+
 class HeartDiseasePredictionService:
     def __init__(self, model_path: Path = CAD_MODEL_PATH):
         self.model_path = model_path
@@ -111,6 +126,7 @@ class HeartDiseasePredictionService:
         self._imputer = None
         self._scaler = None
         self._classifier = None
+        self._metadata: Dict[str, Any] = {}
         self._load_model()
 
     def _load_model(self) -> None:
@@ -118,10 +134,41 @@ class HeartDiseasePredictionService:
             raise FileNotFoundError(
                 f"Heart disease model not found at {self.model_path.resolve()}"
             )
-        self._model = joblib.load(self.model_path)
+        loaded = joblib.load(self.model_path)
+        # Support both bare Pipeline and dictionary-wrapped artifacts (e.g. heart_disease_new.joblib)
+        if isinstance(loaded, dict) and "model" in loaded:
+            self._model = loaded["model"]
+            self._metadata = loaded
+        else:
+            self._model = loaded
+            self._metadata = {}
+
         self._imputer = self._model.named_steps["imputer"]
         self._scaler = self._model.named_steps["scaler"]
         self._classifier = self._model.named_steps["classifier"]
+
+    def validate_features(self, features: Dict[str, Any]) -> Dict[str, float]:
+        """
+        Validate input dictionary, ensuring all required features exist and are numeric.
+        Fills optional diagnostic indicators with baseline defaults if absent.
+        """
+        cleaned: Dict[str, float] = {}
+        missing = []
+        for col in CAD_FEATURE_NAMES:
+            if col in features and features[col] is not None:
+                try:
+                    cleaned[col] = float(features[col])
+                except (ValueError, TypeError):
+                    raise ValueError(f"Feature '{col}' must be a numeric value, got: {features[col]!r}")
+            elif col in CAD_DEFAULT_VALUES:
+                cleaned[col] = CAD_DEFAULT_VALUES[col]
+            else:
+                missing.append(col)
+
+        if missing:
+            raise ValueError(f"Missing required CAD input features: {', '.join(missing)}")
+
+        return cleaned
 
     def predict(
         self,
@@ -132,7 +179,9 @@ class HeartDiseasePredictionService:
         Evaluate patient data against the trained Heart Disease Logistic Regression pipeline.
         Returns prediction, probability, risk tier, and feature contribution impacts.
         """
-        row = [features[col] for col in CAD_FEATURE_NAMES]
+        cleaned_features = self.validate_features(features)
+
+        row = [cleaned_features[col] for col in CAD_FEATURE_NAMES]
         input_df = pd.DataFrame([row], columns=CAD_FEATURE_NAMES)
 
         probabilities = self._model.predict_proba(input_df)[0]
@@ -157,7 +206,7 @@ class HeartDiseasePredictionService:
 
         feature_contributions: List[Dict[str, Any]] = []
         for i, col in enumerate(CAD_FEATURE_NAMES):
-            raw_val = float(features[col])
+            raw_val = float(cleaned_features[col])
             scaled_val = float(scaled_values[i])
             coef = float(coefficients[i])
             impact = coef * scaled_val
@@ -197,3 +246,4 @@ class HeartDiseasePredictionService:
 
 # Global singleton instance
 heart_disease_service = HeartDiseasePredictionService()
+

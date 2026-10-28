@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 # ----------------------------------------
 
 class DiabetesInput(BaseModel):
+    patient_id: Optional[str] = Field("PT-DEFAULT", description="Patient identifier")
     HighBP: int = Field(..., ge=0, le=1, description="High blood pressure (0=No, 1=Yes)")
     HighChol: int = Field(..., ge=0, le=1, description="High cholesterol (0=No, 1=Yes)")
     CholCheck: int = Field(1, ge=0, le=1, description="Cholesterol checked in past 5 years (0=No, 1=Yes)")
@@ -34,6 +35,7 @@ class DiabetesInput(BaseModel):
 
 
 class HeartDiseaseInput(BaseModel):
+    patient_id: Optional[str] = Field("PT-DEFAULT", description="Patient identifier")
     age: float = Field(..., ge=18.0, le=120.0, description="Age in years")
     sex: int = Field(..., ge=0, le=1, description="Sex (1=Male, 0=Female)")
     cp: int = Field(..., ge=1, le=4, description="Chest Pain Type (1: Typical Angina, 2: Atypical, 3: Non-Anginal, 4: Asymptomatic)")
@@ -83,6 +85,9 @@ class PredictionOutput(BaseModel):
     feature_contributions: List[FeatureContribution]
     top_risk_factors: List[FeatureContribution]
     top_protective_factors: List[FeatureContribution]
+    assessment_id: Optional[str] = None
+    patient_id: Optional[str] = None
+    clinical_target_note: Optional[str] = None
 
 
 class ClinicalAlert(BaseModel):
@@ -121,6 +126,7 @@ class DiseaseDecisionPair(BaseModel):
 
 
 class ComprehensiveResponse(BaseModel):
+    comprehensive_id: Optional[str] = None
     patient_id: Optional[str]
     overall_urgency: str
     diabetes_assessment: DiseaseDecisionPair
@@ -134,4 +140,68 @@ class HealthResponse(BaseModel):
     status: str
     diabetes_model: str
     heart_disease_model: str
+    database_status: Optional[str] = "connected"
     version: str
+
+
+# ----------------------------------------
+# Patient & History Persistence Schemas
+# ----------------------------------------
+
+class PatientCreate(BaseModel):
+    patient_id: str = Field(..., description="Unique patient identifier")
+    name: Optional[str] = Field(None, description="Patient name or alias")
+    age: Optional[float] = Field(None, ge=0.0, le=130.0, description="Age in years")
+    sex: Optional[int] = Field(None, ge=0, le=1, description="Biological sex (0=Female, 1=Male)")
+
+
+class PatientResponse(BaseModel):
+    patient_id: str
+    name: Optional[str]
+    age: Optional[float]
+    sex: Optional[int]
+    created_at: str
+    updated_at: str
+
+
+class AssessmentHistoryItem(BaseModel):
+    id: int
+    assessment_id: str
+    patient_id: str
+    condition: str
+    prediction: int
+    probability: float
+    risk_tier: str
+    risk_color: str
+    threshold: float
+    urgency: Optional[str]
+    created_at: str
+
+
+class AssessmentHistoryResponse(BaseModel):
+    total: int
+    items: List[AssessmentHistoryItem]
+
+
+class ExplainabilitySummary(BaseModel):
+    condition: str
+    model_name: str
+    feature_count: int
+    top_influential_features: List[Dict[str, Any]]
+    clinical_context: str
+
+
+class ThresholdSimulationItem(BaseModel):
+    threshold: float
+    simulated_prediction: int
+    classification_label: str
+
+
+class ThresholdSimulationResponse(BaseModel):
+    condition: str
+    patient_id: Optional[str]
+    calculated_probability: float
+    current_threshold: float
+    current_prediction: int
+    simulations: List[ThresholdSimulationItem]
+

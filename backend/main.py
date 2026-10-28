@@ -1,6 +1,5 @@
 """Main FastAPI application for Chronic Disease Early Prediction & Decision Support."""
 
-from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,24 +9,28 @@ from fastapi.responses import FileResponse
 from backend.api.routes import router as api_router
 from backend.services.diabetes_service import diabetes_service
 from backend.services.heart_disease_service import heart_disease_service
-
-FRONTEND_DIR = Path("frontend")
+from backend.db.database import init_db
+from backend.core.config import FRONTEND_DIR, PROJECT_NAME, PROJECT_VERSION
+from backend.core.logging import logger
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Initialize database tables and directory
+    init_db()
+    
     # Pre-warm models on startup
     _ = diabetes_service
     _ = heart_disease_service
-    print("[System] Chronic Disease Models and Decision Agents loaded and initialized successfully.")
+    logger.info("Chronic Disease Models, Database, and Decision Agents initialized successfully.")
     yield
-    print("[System] Shutting down application.")
+    logger.info("Shutting down Chronic Disease application.")
 
 
 app = FastAPI(
-    title="Agentic AI Chronic Disease Early Prediction & Decision-Support System",
+    title=PROJECT_NAME,
     description="Early prediction, local explainability, and clinical decision support for Diabetes and Coronary Artery Disease.",
-    version="1.0.0",
+    version=PROJECT_VERSION,
     lifespan=lifespan,
 )
 
@@ -61,3 +64,4 @@ if FRONTEND_DIR.exists():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("backend.main:app", host="127.0.0.1", port=8000, reload=True)
+
