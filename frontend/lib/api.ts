@@ -67,8 +67,6 @@ export const patientApi = {
         ? `/history/assessments?patient_id=${encodeURIComponent(patientId)}`
         : '/history/assessments'
     ),
-  getAssessmentDetails: (assessmentId: string) =>
-    apiRequest<any>(`/history/assessments/${encodeURIComponent(assessmentId)}`),
   predictDiabetes: (payload: any) =>
     apiRequest<any>('/decision-support/diabetes', {
       method: 'POST',

@@ -1,5 +1,30 @@
+# Virtual environments
 .venv/
+venv/
+backend/venv/
+*/venv/
+*/.venv/
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+.next/
+frontend/.next/
+
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
+
+# Nested duplicate clone
+Agentic-Chronic-Disease/
+
+# SQLite lock & WAL files
+*.db-shm
+*.db-wal
+
+# Environment & scratch
+.env
+.env.local
+frontend/.env.local
 .system_generated/

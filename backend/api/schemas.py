@@ -148,11 +148,6 @@ class HealthResponse(BaseModel):
 # Patient & History Persistence Schemas
 # ----------------------------------------
 
-class AuthLoginRequest(BaseModel):
-    email: str = Field(..., description="User email or patient ID")
-    password: Optional[str] = Field(None, description="User password")
-
-
 class PatientCreate(BaseModel):
     patient_id: str = Field(..., description="Unique patient identifier")
     name: Optional[str] = Field(None, description="Patient name or alias")
