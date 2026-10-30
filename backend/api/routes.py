@@ -12,6 +12,7 @@ from backend.api.schemas import (
     ComprehensiveResponse,
     HealthResponse,
     PatientCreate,
+    AuthLoginRequest,
     PatientResponse,
     AssessmentHistoryResponse,
     ExplainabilitySummary,
@@ -291,6 +292,24 @@ def comprehensive_decision_support(payload: ComprehensiveAssessmentInput):
 # ------------------------------------------------------------------------------
 # Patient Management Endpoints
 # ------------------------------------------------------------------------------
+
+
+@router.post("/patients/register", response_model=PatientResponse)
+def register_patient_alias(payload: PatientCreate):
+    """Alias endpoint for patient registration."""
+    return register_or_update_patient(payload)
+
+
+@router.post("/auth/login")
+def login_patient(payload: AuthLoginRequest):
+    """Session / login endpoint verifying or creating patient."""
+    patient = clinical_repository.get_patient(payload.email)
+    if not patient:
+        patient = clinical_repository.ensure_patient(
+            patient_id=payload.email,
+            name=payload.email.split("@")[0],
+        )
+    return {"status": "authenticated", "patient": patient}
 
 @router.post("/patients", response_model=PatientResponse)
 def register_or_update_patient(payload: PatientCreate):
