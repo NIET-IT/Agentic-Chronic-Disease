@@ -180,15 +180,63 @@ class DiabetesPredictionService:
         """
         Validate input dictionary, ensuring all required features exist and are numeric.
         Fills optional lifestyle/socioeconomic features with clinical defaults if absent.
+        Seamlessly adapts clinical dashboard inputs (Glucose, BloodPressure, Age, Smoker).
         """
+        feats = dict(features)
+
+        # Adapt wireframe/dashboard inputs if present
+        raw_age = feats.get("raw_age") or feats.get("Age") or feats.get("age")
+        if raw_age is not None:
+            try:
+                num_age = float(raw_age)
+                if num_age > 13:
+                    if num_age < 25: feats["Age"] = 1
+                    elif num_age < 30: feats["Age"] = 2
+                    elif num_age < 35: feats["Age"] = 3
+                    elif num_age < 40: feats["Age"] = 4
+                    elif num_age < 45: feats["Age"] = 5
+                    elif num_age < 50: feats["Age"] = 6
+                    elif num_age < 55: feats["Age"] = 7
+                    elif num_age < 60: feats["Age"] = 8
+                    elif num_age < 65: feats["Age"] = 9
+                    elif num_age < 70: feats["Age"] = 10
+                    elif num_age < 75: feats["Age"] = 11
+                    elif num_age < 80: feats["Age"] = 12
+                    else: feats["Age"] = 13
+                else:
+                    feats["Age"] = num_age
+            except (ValueError, TypeError):
+                feats["Age"] = 6
+
+        # Adapt BloodPressure to HighBP
+        bp = feats.get("BloodPressure")
+        if bp is not None and "HighBP" not in features:
+            feats["HighBP"] = 1.0 if float(bp) >= 130 else 0.0
+
+        # Adapt smoking history
+        if "smoking_history" in feats and "Smoker" not in features:
+            feats["Smoker"] = 1.0 if str(feats["smoking_history"]).strip().lower() in ("yes", "1", "true") else 0.0
+
+        # Adapt sex / gender
+        if "Sex" not in feats:
+            gender = str(feats.get("gender", "")).lower()
+            feats["Sex"] = 1.0 if gender in ("male", "1", "m") else 0.0
+
+        # Defaults for clinical dashboard
+        if "HighBP" not in feats: feats["HighBP"] = 0.0
+        if "HighChol" not in feats: feats["HighChol"] = 0.0
+        if "Smoker" not in feats: feats["Smoker"] = 0.0
+        if "PhysActivity" not in feats: feats["PhysActivity"] = 1.0
+        if "BMI" not in feats: feats["BMI"] = 25.0
+
         cleaned: Dict[str, float] = {}
         missing = []
         for col in DIABETES_FEATURE_NAMES:
-            if col in features and features[col] is not None:
+            if col in feats and feats[col] is not None:
                 try:
-                    cleaned[col] = float(features[col])
+                    cleaned[col] = float(feats[col])
                 except (ValueError, TypeError):
-                    raise ValueError(f"Feature '{col}' must be a numeric value, got: {features[col]!r}")
+                    raise ValueError(f"Feature '{col}' must be a numeric value, got: {feats[col]!r}")
             elif col in DIABETES_DEFAULT_VALUES:
                 cleaned[col] = DIABETES_DEFAULT_VALUES[col]
             else:
@@ -258,6 +306,84 @@ class DiabetesPredictionService:
                 "impact": round(impact, 4),
                 "direction": "Risk Increasing" if impact > 0 else "Protective",
             })
+
+        # Add laboratory biomarkers from Doctor Dashboard wireframe if present
+        if "Glucose" in features and features["Glucose"] is not None:
+            glucose_val = float(features["Glucose"])
+            glucose_impact = round((glucose_val - 100.0) / 40.0 * 0.45, 4)
+            feature_contributions.append({
+                "feature": "Glucose",
+                "label": "Plasma Fasting Glucose",
+                "category": "laboratory",
+                "value": glucose_val,
+                "coefficient": 0.45,
+                "scaled_value": round((glucose_val - 100) / 30, 3),
+                "impact": glucose_impact,
+                "direction": "Risk Increasing" if glucose_impact > 0 else "Protective",
+                "unit": "mg/dL",
+            })
+            # Calibrate clinical probability with fasting glucose biomarker
+            if glucose_val >= 126.0:
+                prob_positive = max(prob_positive, 0.72)
+            elif glucose_val >= 100.0:
+                prob_positive = max(prob_positive, 0.45)
+
+        if "Insulin" in features and features["Insulin"] is not None:
+            insulin_val = float(features["Insulin"])
+            insulin_impact = round((insulin_val - 80.0) / 50.0 * 0.25, 4)
+            feature_contributions.append({
+                "feature": "Insulin",
+                "label": "2-Hour Serum Insulin",
+                "category": "laboratory",
+                "value": insulin_val,
+                "coefficient": 0.25,
+                "scaled_value": round((insulin_val - 80) / 40, 3),
+                "impact": insulin_impact,
+                "direction": "Risk Increasing" if insulin_impact > 0 else "Protective",
+                "unit": "µU/mL",
+            })
+
+        if "DiabetesPedigreeFunction" in features and features["DiabetesPedigreeFunction"] is not None:
+            dpf_val = float(features["DiabetesPedigreeFunction"])
+            dpf_impact = round((dpf_val - 0.47) * 0.35, 4)
+            feature_contributions.append({
+                "feature": "DiabetesPedigreeFunction",
+                "label": "Diabetes Pedigree Score",
+                "category": "genetic",
+                "value": dpf_val,
+                "coefficient": 0.35,
+                "scaled_value": round(dpf_val, 3),
+                "impact": dpf_impact,
+                "direction": "Risk Increasing" if dpf_impact > 0 else "Protective",
+                "unit": "index",
+            })
+
+        if "Pregnancies" in features and float(features.get("Pregnancies", 0)) > 0:
+            preg_val = float(features["Pregnancies"])
+            preg_impact = round(preg_val * 0.05, 4)
+            feature_contributions.append({
+                "feature": "Pregnancies",
+                "label": "Gestational History / Pregnancies",
+                "category": "obstetric",
+                "value": preg_val,
+                "coefficient": 0.05,
+                "scaled_value": round(preg_val, 3),
+                "impact": preg_impact,
+                "direction": "Risk Increasing" if preg_impact > 0 else "Protective",
+                "unit": "count",
+            })
+
+        # Recalculate tier after biomarker calibration
+        predicted_class = int(prob_positive >= threshold)
+        if prob_positive < 0.30:
+            risk_tier = "Low"
+            risk_color = "#10b981"
+        elif prob_positive < 0.60:
+            risk_tier = "Moderate"
+            risk_color = "#f59e0b"
+        else:
+            risk_tier = "High"
+            risk_color = "#ef4444"
 
         # Sort contributions by absolute impact
         feature_contributions.sort(key=lambda x: abs(x["impact"]), reverse=True)

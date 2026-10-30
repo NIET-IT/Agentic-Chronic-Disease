@@ -99,7 +99,16 @@ def diabetes_decision_support(payload: DiabetesInput):
     try:
         data = payload.model_dump()
         patient_id = data.pop("patient_id", "PT-DEFAULT") or "PT-DEFAULT"
+        patient_name = data.pop("patient_name", "Alex Morgan") or "Alex Morgan"
         threshold = data.pop("threshold", 0.50)
+
+        # Ensure patient demographic record exists in SQLite
+        clinical_repository.ensure_patient(
+            patient_id=patient_id,
+            age=float(data.get("raw_age") or 45.0),
+            sex=int(data.get("Sex") or 0),
+            name=patient_name,
+        )
 
         prediction = diabetes_service.predict(data, threshold=threshold)
         decision_support = decision_agent.evaluate_diabetes_case(prediction, data)
@@ -114,6 +123,7 @@ def diabetes_decision_support(payload: DiabetesInput):
         )
         prediction["assessment_id"] = assessment_id
         prediction["patient_id"] = patient_id
+        prediction["patient_name"] = patient_name
 
         return {
             "prediction": prediction,
@@ -171,7 +181,16 @@ def heart_disease_decision_support(payload: HeartDiseaseInput):
     try:
         data = payload.model_dump()
         patient_id = data.pop("patient_id", "PT-DEFAULT") or "PT-DEFAULT"
+        patient_name = data.pop("patient_name", "Alex Morgan") or "Alex Morgan"
         threshold = data.pop("threshold", 0.50)
+
+        # Ensure patient demographic record exists in SQLite
+        clinical_repository.ensure_patient(
+            patient_id=patient_id,
+            age=float(data.get("age") or 54.0),
+            sex=int(data.get("sex") or 1),
+            name=patient_name,
+        )
 
         prediction = heart_disease_service.predict(data, threshold=threshold)
         decision_support = decision_agent.evaluate_heart_disease_case(prediction, data)
@@ -186,6 +205,7 @@ def heart_disease_decision_support(payload: HeartDiseaseInput):
         )
         prediction["assessment_id"] = assessment_id
         prediction["patient_id"] = patient_id
+        prediction["patient_name"] = patient_name
 
         return {
             "prediction": prediction,
@@ -212,6 +232,15 @@ def comprehensive_decision_support(payload: ComprehensiveAssessmentInput):
     """
     try:
         patient_id = payload.patient_id or "PT-1001"
+        patient_name = payload.patient_name or "Alex Morgan"
+
+        # Ensure patient demographic record exists in SQLite
+        clinical_repository.ensure_patient(
+            patient_id=patient_id,
+            age=float(payload.heart_disease_data.age or payload.diabetes_data.raw_age or 45.0),
+            sex=int(payload.heart_disease_data.sex if payload.heart_disease_data.sex is not None else (payload.diabetes_data.Sex or 1)),
+            name=patient_name,
+        )
 
         dia_data = payload.diabetes_data.model_dump()
         dia_thresh = dia_data.pop("threshold", 0.50)
@@ -262,6 +291,7 @@ def comprehensive_decision_support(payload: ComprehensiveAssessmentInput):
         return {
             "comprehensive_id": comp_id,
             "patient_id": patient_id,
+            "patient_name": patient_name,
             "overall_urgency": holistic["overall_urgency"],
             "diabetes_assessment": {
                 "prediction": dia_prediction,
