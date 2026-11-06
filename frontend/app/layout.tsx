@@ -3,8 +3,8 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Pulsepath | Understand your health earlier',
-  description: 'Explainable chronic disease decision support for a more informed health journey.',
+  title: 'AI-Based Chronic Disease Prediction Report | Clinical Decision Support',
+  description: 'Explainable AI-based chronic disease decision support and risk prediction.',
   generator: 'v0.app',
   icons: {
     icon: [
