@@ -330,7 +330,7 @@ const fallbackAssessments: AssessmentItem[] = [
 ]
 
 export default function HealthcareApp() {
-  const [view, setView] = useState<View>('login')
+  const [view, setView] = useState<View>('home')
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
   const [authNotice, setAuthNotice] = useState<string>('')
   const [dark, setDark] = useState(false)
@@ -344,7 +344,7 @@ export default function HealthcareApp() {
     hospital: 'AI-Based Chronic Disease System',
   })
 
-  // Check login status on mount - only logged in doctors can access dashboard
+  // Check login status on mount - sets auth state while keeping landing page as default view
   useEffect(() => {
     try {
       const loggedIn = localStorage.getItem('chroniccare_logged_in') === 'true'
@@ -355,14 +355,11 @@ export default function HealthcareApp() {
           setDoctor(parsed)
         }
         setIsAuthenticated(true)
-        setView('dashboard')
       } else {
         setIsAuthenticated(false)
-        setView('login')
       }
     } catch {
       setIsAuthenticated(false)
-      setView('login')
     }
   }, [])
 
